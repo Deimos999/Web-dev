@@ -1,0 +1,36 @@
+:root{
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --muted: #7b8aa3;
+  --accent: #6c5ce7; 
+  --danger: #ff6b6b;
+  --radius: 12px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+*{box-sizing: border-box}
+body{margin:0;background:var(--bg);color:#1f2937;min-height:100vh}
+.app-header{
+  display:flex;align-items:center;justify-content:space-between;padding:20px 32px;background:transparent;
+}
+.brand{margin:0;font-size:20px;color:var(--accent)}
+nav{display:flex;gap:10px;align-items:center}
+.link{background:transparent;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--accent)}
+.greeting{color:var(--muted);margin-right:8px}
+
+.container{max-width:960px;margin:28px auto;padding:0 16px}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 6px 18px rgba(40,41,61,0.06);margin-bottom:16px}
+
+label{display:block;margin:8px 0;font-size:14px;color:var(--muted)}
+input, select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:6px}
+.btn{background:var(--accent);color:white;padding:10px 14px;border-radius:10px;border:0;margin-top:12px;cursor:pointer}
+.btn.danger{background:var(--danger)}
+.actions{display:flex;gap:8px;margin-top:10px}
+
+.users-table{width:100%;border-collapse:collapse;margin-top:10px}
+.users-table th, .users-table td{padding:8px 10px;text-align:left;border-bottom:1px solid #f1f3f6}
+.edit-panel{margin-top:16px;padding:12px;border-radius:8px;background:#fbfbff}
+
+.error{color:var(--danger);margin-top:8px}
+.info{color:var(--accent);margin-top:8px}
+.footer{text-align:center;padding:18px;color:var(--muted);font-size:13px}

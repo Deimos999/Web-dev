@@ -1,0 +1,117 @@
+.admin-container {
+  background-color: #000; 
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  color: #fff;
+}
+
+.card {
+  background-color: #1c1c1c; 
+  border-radius: 10px;
+  margin-bottom: 20px;
+  width: 800px;
+  box-shadow: 0 0 20px rgba(127, 63, 255, 0.5); 
+}
+
+h2, h3 {
+  color: #7f3fff; 
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.users-table th, .users-table td {
+  padding: 10px;
+  text-align: left;
+}
+
+.users-table th {
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+.users-table tr:nth-child(even) {
+  background-color: #1a1a1a;
+}
+
+.users-table td {
+  color: #fff;
+}
+
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+button.purple {
+  background-color: #7f3fff;
+  color: #fff;
+}
+
+button.purple:hover {
+  background-color: #9b5fff;
+}
+
+button.red {
+  background-color: #ff3f3f;
+  color: #fff;
+  margin-left: 5px;
+}
+
+button.btn {
+  background-color: #333;
+  color: #fff;
+}
+
+button.btn:hover {
+  background-color: #444;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #fff; 
+  background-color: #000; 
+  color: #fff; 
+}
+
+input::placeholder {
+  color: #ccc;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.edit-panel {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(127, 63, 255, 0.5);
+}
+
+.error {
+  color: #ff4c4c;
+  margin-bottom: 10px;
+  text-align: center;
+}
