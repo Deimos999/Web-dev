@@ -1,6 +1,6 @@
-# 🎭 Virtual Event Registration Portal
+# 🎫 Virtual Event Registration Platform
 
-A comprehensive platform for hosting, registering, and streaming virtual events - similar to Steam's event system.
+A comprehensive event registration and management platform for organizing virtual events with ticketing, payments, and attendee management.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)
@@ -19,17 +19,18 @@ A comprehensive platform for hosting, registering, and streaming virtual events 
 
 ## 🎯 Overview
 
-A full-stack virtual event platform that enables users to discover, register, and attend online events with real-time streaming, interactive chat, Q&A, and payment processing.
+A full-stack event registration platform that enables organizers to create and manage virtual events, sell tickets, and handle attendee registrations with integrated payment processing and automated notifications.
 
 ### Key Capabilities
 
-- 🎫 Event discovery and registration
+- 🎫 Event discovery and browsing
 - 💳 Integrated payment processing (Stripe)
-- 🎥 Live and on-demand video streaming
-- 💬 Real-time chat and Q&A
+- 📝 Multi-tier ticketing system
 - 📊 Analytics dashboard for organizers
 - 📧 Automated email notifications
 - 🎨 Responsive design (mobile & desktop)
+- 🎟️ QR code ticket generation
+- 📅 Calendar integration
 
 ## 🏗️ System Architecture
 
@@ -45,13 +46,12 @@ graph TB
     subgraph "Frontend - React App"
         C[React Components]
         D[State Management]
-        E[WebSocket Client]
+        E[Payment UI]
     end
     
     subgraph "Backend Services"
         F[Express API Server]
-        G[WebSocket Server]
-        H[Background Jobs]
+        G[Background Jobs]
     end
     
     subgraph "Data Layer"
@@ -62,22 +62,21 @@ graph TB
     subgraph "External Services"
         K[Stripe Payments]
         L[SendGrid Email]
-        M[Vimeo/YouTube]
         N[Clerk Auth]
+        O[QR Code Generator]
     end
     
     A --> C
     B --> C
     C --> F
-    C --> G
     F --> I
-    G --> J
     F --> K
     F --> L
-    F --> M
     F --> N
-    H --> I
-    H --> L
+    F --> O
+    G --> I
+    G --> L
+    F --> J
 ```
 
 ### Detailed Component Architecture
@@ -88,10 +87,10 @@ graph LR
         A1[Event Listing]
         A2[Event Details]
         A3[Registration Flow]
-        A4[Video Player]
-        A5[Chat Interface]
-        A6[User Dashboard]
-        A7[Admin Panel]
+        A4[Ticket Selection]
+        A5[User Dashboard]
+        A6[Admin Panel]
+        A7[My Tickets]
     end
     
     subgraph "API Layer"
@@ -99,8 +98,8 @@ graph LR
         B2[Event Routes]
         B3[Registration Routes]
         B4[Payment Routes]
-        B5[Stream Routes]
-        B6[Chat Routes]
+        B5[Ticket Routes]
+        B6[Analytics Routes]
     end
     
     subgraph "Business Logic"
@@ -108,24 +107,24 @@ graph LR
         C2[Event Service]
         C3[Registration Service]
         C4[Payment Service]
-        C5[Stream Service]
+        C5[Ticket Service]
         C6[Notification Service]
     end
     
     A1 --> B2
     A2 --> B2
     A3 --> B3
-    A4 --> B5
-    A5 --> B6
-    A6 --> B1
-    A7 --> B2
+    A4 --> B4
+    A5 --> B1
+    A6 --> B2
+    A7 --> B5
     
     B1 --> C1
     B2 --> C2
     B3 --> C3
     B4 --> C4
     B5 --> C5
-    B6 --> C1
+    B3 --> C6
 ```
 
 ### Data Flow - Registration Process
@@ -138,51 +137,48 @@ sequenceDiagram
     participant DB as Database
     participant S as Stripe
     participant E as Email Service
+    participant Q as QR Service
     
-    U->>F: Click "Register"
+    U->>F: Browse Events
+    F->>A: GET /api/events
+    A->>DB: Query events
+    DB-->>A: Return events
+    A-->>F: Event list
+    
+    U->>F: Select Event & Ticket
     F->>A: POST /api/registrations
-    A->>DB: Check event capacity
-    DB-->>A: Capacity available
+    A->>DB: Check availability
+    DB-->>A: Tickets available
     A->>S: Create checkout session
     S-->>A: Session URL
     A-->>F: Return checkout URL
+    
     F->>S: Redirect to Stripe
     U->>S: Complete payment
     S->>A: Webhook: payment_success
     A->>DB: Create registration
+    A->>Q: Generate QR code
+    Q-->>A: QR code image
     A->>E: Send confirmation email
-    E-->>U: Email delivered
+    E-->>U: Email with ticket
     A-->>F: Registration confirmed
     F->>U: Show success page
 ```
 
-### Real-time Chat Architecture
+### Ticket Generation Flow
 
 ```mermaid
 graph TB
-    subgraph "Client Side"
-        A[User Browser]
-        B[Socket.io Client]
-    end
-    
-    subgraph "Server Side"
-        C[Socket.io Server]
-        D[Redis Pub/Sub]
-        E[Message Queue]
-    end
-    
-    subgraph "Storage"
-        F[(Redis Cache)]
-        G[(PostgreSQL)]
-    end
-    
-    A --> B
-    B <--> C
-    C <--> D
-    C --> E
-    D --> F
-    E --> G
-    C --> F
+    A[Payment Confirmed] --> B[Create Registration]
+    B --> C[Generate Unique Ticket ID]
+    C --> D[Create QR Code]
+    D --> E[Store Ticket Data]
+    E --> F{Email Template}
+    F --> G[PDF Ticket]
+    F --> H[HTML Email]
+    G --> I[Send to User]
+    H --> I
+    I --> J[Update Notification Status]
 ```
 
 ## 🗄️ Database Schema
@@ -193,17 +189,18 @@ graph TB
 erDiagram
     USERS ||--o{ REGISTRATIONS : creates
     USERS ||--o{ EVENTS : organizes
-    USERS ||--o{ CHAT_MESSAGES : sends
     EVENTS ||--o{ REGISTRATIONS : has
-    EVENTS ||--o{ CHAT_MESSAGES : contains
+    EVENTS ||--o{ TICKETS : offers
     EVENTS ||--o{ CATEGORIES : belongs_to
     REGISTRATIONS ||--|| PAYMENTS : has
+    REGISTRATIONS ||--|| TICKETS : generates
     
     USERS {
         uuid id PK
         string email UK
         string name
         string role
+        string phone
         timestamp created_at
     }
     
@@ -212,22 +209,40 @@ erDiagram
         string title
         text description
         string image_url
-        string video_url
         timestamp start_time
-        int duration
-        decimal price
+        timestamp end_time
+        string timezone
+        string meeting_link
         int capacity
         uuid organizer_id FK
         uuid category_id FK
         string status
+        boolean is_featured
+    }
+    
+    TICKETS {
+        uuid id PK
+        uuid event_id FK
+        string ticket_type
+        string name
+        text description
+        decimal price
+        int quantity
+        int sold
+        timestamp sale_start
+        timestamp sale_end
     }
     
     REGISTRATIONS {
         uuid id PK
         uuid user_id FK
         uuid event_id FK
+        uuid ticket_id FK
         string status
         uuid payment_id FK
+        string ticket_code
+        string qr_code_url
+        boolean checked_in
         timestamp registered_at
     }
     
@@ -245,14 +260,7 @@ erDiagram
         uuid id PK
         string name
         string slug
-    }
-    
-    CHAT_MESSAGES {
-        uuid id PK
-        uuid event_id FK
-        uuid user_id FK
-        text message
-        timestamp sent_at
+        string color
     }
 ```
 
@@ -263,12 +271,12 @@ model User {
   id            String         @id @default(uuid())
   email         String         @unique
   name          String
+  phone         String?
   role          String         @default("user")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   registrations Registration[]
   events        Event[]
-  messages      ChatMessage[]
 }
 
 model Event {
@@ -276,31 +284,52 @@ model Event {
   title         String
   description   String
   imageUrl      String
-  videoUrl      String?
   startTime     DateTime
-  duration      Int            // in minutes
-  price         Decimal        @default(0)
+  endTime       DateTime
+  timezone      String         @default("UTC")
+  meetingLink   String?
   capacity      Int
   organizerId   String
   categoryId    String
   status        String         @default("draft")
+  isFeatured    Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   organizer     User           @relation(fields: [organizerId], references: [id])
   category      Category       @relation(fields: [categoryId], references: [id])
   registrations Registration[]
-  messages      ChatMessage[]
+  tickets       Ticket[]
+}
+
+model Ticket {
+  id            String         @id @default(uuid())
+  eventId       String
+  ticketType    String         // "free", "paid", "earlybird", "vip"
+  name          String
+  description   String?
+  price         Decimal        @default(0)
+  quantity      Int
+  sold          Int            @default(0)
+  saleStart     DateTime?
+  saleEnd       DateTime?
+  event         Event          @relation(fields: [eventId], references: [id])
+  registrations Registration[]
 }
 
 model Registration {
   id            String    @id @default(uuid())
   userId        String
   eventId       String
+  ticketId      String
   status        String    @default("pending")
   paymentId     String?   @unique
+  ticketCode    String    @unique
+  qrCodeUrl     String?
+  checkedIn     Boolean   @default(false)
   registeredAt  DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id])
   event         Event     @relation(fields: [eventId], references: [id])
+  ticket        Ticket    @relation(fields: [ticketId], references: [id])
   payment       Payment?  @relation(fields: [paymentId], references: [id])
   
   @@unique([userId, eventId])
@@ -320,49 +349,62 @@ model Category {
   id      String  @id @default(uuid())
   name    String
   slug    String  @unique
+  color   String  @default("#6366f1")
   events  Event[]
 }
 
-model ChatMessage {
-  id        String   @id @default(uuid())
-  eventId   String
-  userId    String
-  message   String
-  sentAt    DateTime @default(now())
-  event     Event    @relation(fields: [eventId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+model PromoCode {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  discount    Decimal  // percentage or fixed amount
+  type        String   // "percentage" or "fixed"
+  maxUses     Int
+  usedCount   Int      @default(0)
+  validFrom   DateTime
+  validUntil  DateTime
+  isActive    Boolean  @default(true)
 }
 ```
 
 ## ✨ Features
 
 ### User Features
-- Browse and search events
-- Filter by category, date, price
-- Register for free/paid events
-- Secure payment processing
-- Watch live and recorded streams
-- Participate in live chat
-- Ask questions in Q&A
-- Download event materials
-- Calendar integration
+- ✅ Browse and search events
+- ✅ Filter by category, date, price, location
+- ✅ View detailed event information
+- ✅ Select ticket types (Free, Paid, Early Bird, VIP)
+- ✅ Secure payment processing with Stripe
+- ✅ Receive confirmation emails with tickets
+- ✅ Download PDF tickets with QR codes
+- ✅ View registration history
+- ✅ Add events to calendar (ICS file)
+- ✅ Apply promo codes for discounts
+- ✅ Update profile and preferences
 
 ### Organizer Features
-- Create and manage events
-- Set pricing and capacity
-- Upload promotional materials
-- Track registrations
-- View analytics dashboard
-- Send bulk emails to attendees
-- Moderate chat and Q&A
-- Export attendee lists
+- ✅ Create and manage events
+- ✅ Set up multiple ticket tiers
+- ✅ Configure pricing and capacity
+- ✅ Upload event images and materials
+- ✅ Track registrations in real-time
+- ✅ View analytics dashboard
+  - Total registrations
+  - Revenue tracking
+  - Ticket sales by type
+  - Registration trends
+- ✅ Export attendee lists (CSV/Excel)
+- ✅ Send bulk emails to attendees
+- ✅ Scan QR codes for check-in
+- ✅ Create promo codes
+- ✅ Manage event status (draft, published, cancelled)
 
 ### Admin Features
-- User management
-- Event approval workflow
-- System analytics
-- Revenue tracking
-- Content moderation tools
+- ✅ User management
+- ✅ Event approval workflow
+- ✅ System-wide analytics
+- ✅ Revenue tracking across all events
+- ✅ Category management
+- ✅ Platform settings
 
 ## 🛠️ Tech Stack
 
@@ -371,19 +413,21 @@ model ChatMessage {
 - **Styling:** TailwindCSS
 - **State Management:** Zustand / React Query
 - **Routing:** React Router v6
-- **Real-time:** Socket.io Client
-- **Video Player:** Video.js / React Player
 - **Forms:** React Hook Form + Zod
+- **UI Components:** Shadcn UI
+- **Date Handling:** date-fns
+- **QR Code:** qrcode.react
 
 ### Backend
 - **Runtime:** Node.js 18+
 - **Framework:** Express.js
 - **ORM:** Prisma
-- **Authentication:** Clerk / Firebase Auth
-- **Real-time:** Socket.io
+- **Authentication:** Clerk / JWT
 - **Job Queue:** Bull (Redis-based)
 - **Email:** SendGrid / Resend
 - **Payments:** Stripe
+- **PDF Generation:** PDFKit / Puppeteer
+- **QR Codes:** qrcode
 
 ### Database & Cache
 - **Primary DB:** PostgreSQL 15
@@ -412,8 +456,8 @@ redis >= 7
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/event-portal.git
-cd event-portal
+git clone https://github.com/yourusername/event-registration-platform.git
+cd event-registration-platform
 ```
 
 2. **Install dependencies**
@@ -433,7 +477,7 @@ Create `.env` files in both frontend and backend directories:
 
 **Backend `.env`:**
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/eventportal"
+DATABASE_URL="postgresql://user:password@localhost:5432/eventplatform"
 REDIS_URL="redis://localhost:6379"
 JWT_SECRET="your-secret-key"
 CLERK_SECRET_KEY="your-clerk-secret"
@@ -442,6 +486,7 @@ STRIPE_WEBHOOK_SECRET="your-webhook-secret"
 SENDGRID_API_KEY="your-sendgrid-key"
 AWS_ACCESS_KEY_ID="your-aws-key"
 AWS_SECRET_ACCESS_KEY="your-aws-secret"
+FRONTEND_URL="http://localhost:5173"
 PORT=5000
 ```
 
@@ -485,6 +530,7 @@ POST   /api/auth/register       - Register new user
 POST   /api/auth/login          - Login user
 POST   /api/auth/logout         - Logout user
 GET    /api/auth/me             - Get current user
+PUT    /api/auth/profile        - Update profile
 ```
 
 ### Event Endpoints
@@ -495,54 +541,65 @@ GET    /api/events/:id          - Get event details
 POST   /api/events              - Create event (organizer)
 PUT    /api/events/:id          - Update event (organizer)
 DELETE /api/events/:id          - Delete event (organizer)
-GET    /api/events/:id/stream   - Get stream access token
+GET    /api/events/search       - Search events
+GET    /api/events/featured     - Get featured events
+```
+
+### Ticket Endpoints
+
+```
+GET    /api/tickets/event/:eventId  - Get tickets for event
+POST   /api/tickets                 - Create ticket type (organizer)
+PUT    /api/tickets/:id             - Update ticket (organizer)
+DELETE /api/tickets/:id             - Delete ticket (organizer)
 ```
 
 ### Registration Endpoints
 
 ```
-POST   /api/registrations       - Register for event
-GET    /api/registrations/me    - Get my registrations
-DELETE /api/registrations/:id   - Cancel registration
+POST   /api/registrations           - Register for event
+GET    /api/registrations/me        - Get my registrations
+GET    /api/registrations/:id       - Get registration details
+DELETE /api/registrations/:id       - Cancel registration
+GET    /api/registrations/:id/ticket - Download ticket PDF
+POST   /api/registrations/:id/checkin - Check-in attendee
 ```
 
 ### Payment Endpoints
 
 ```
-POST   /api/payments/checkout   - Create Stripe checkout session
-POST   /api/payments/webhook    - Stripe webhook handler
-GET    /api/payments/:id        - Get payment details
+POST   /api/payments/checkout       - Create Stripe checkout session
+POST   /api/payments/webhook        - Stripe webhook handler
+GET    /api/payments/:id            - Get payment details
+POST   /api/payments/apply-promo    - Apply promo code
 ```
 
-### Chat Endpoints (WebSocket)
+### Analytics Endpoints
 
 ```
-connect    - Connect to chat server
-join       - Join event chat room
-message    - Send message
-leave      - Leave chat room
-disconnect - Disconnect from server
+GET    /api/analytics/event/:id     - Event analytics (organizer)
+GET    /api/analytics/overview      - Platform overview (admin)
+GET    /api/analytics/revenue       - Revenue reports
 ```
 
-## 🎯 4-Week Development Timeline
+## 🎯 3-Week Development Timeline
 
 ```mermaid
 gantt
-    title 4-Week Project Timeline
+    title 3-Week Project Timeline
     dateFormat  YYYY-MM-DD
     section Week 1
     Setup & Auth           :w1t1, 2024-01-01, 2d
-    Event Listing         :w1t2, after w1t1, 3d
+    Event Listing & CRUD   :w1t2, after w1t1, 3d
     section Week 2
-    Registration System   :w2t1, 2024-01-08, 2d
-    Payment Integration   :w2t2, after w2t1, 3d
+    Ticket System          :w2t1, 2024-01-08, 2d
+    Registration Flow      :w2t2, after w2t1, 1d
+    Payment Integration    :w2t3, after w2t2, 2d
     section Week 3
-    Video Streaming       :w3t1, 2024-01-15, 2d
-    Chat & Interactivity  :w3t2, after w3t1, 3d
-    section Week 4
-    Dashboard & Admin     :w4t1, 2024-01-22, 2d
-    Testing & Polish      :w4t2, after w4t1, 2d
-    Deployment           :w4t3, after w4t2, 1d
+    Ticket Generation      :w3t1, 2024-01-15, 2d
+    Dashboard & Analytics  :w3t2, after w3t1, 2d
+    Testing & Polish       :w3t3, after w3t2, 2d
+    Deployment            :w3t4, after w3t3, 1d
 ```
 
 ## 🌐 Deployment
@@ -561,16 +618,57 @@ cd backend
 railway up
 ```
 
+### Database Migration
+
+```bash
+npx prisma migrate deploy
+```
+
 ### Environment Variables
 
-Make sure to set all environment variables in your hosting platform's dashboard.
+Set all environment variables in your hosting platform's dashboard.
 
-## 📊 Monitoring & Analytics
+## 📊 Project Structure
 
-- **Error Tracking:** Sentry
-- **Performance:** Vercel Analytics
-- **User Analytics:** Mixpanel
-- **Logs:** Better Stack (Logtail)
+```
+event-registration-platform/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── EventCard.jsx
+│   │   │   ├── EventList.jsx
+│   │   │   ├── TicketSelector.jsx
+│   │   │   └── Dashboard.jsx
+│   │   ├── pages/
+│   │   │   ├── Home.jsx
+│   │   │   ├── EventDetails.jsx
+│   │   │   ├── Registration.jsx
+│   │   │   ├── MyTickets.jsx
+│   │   │   └── AdminPanel.jsx
+│   │   ├── hooks/
+│   │   ├── utils/
+│   │   └── App.jsx
+│   └── package.json
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── auth.js
+│   │   │   ├── events.js
+│   │   │   ├── tickets.js
+│   │   │   ├── registrations.js
+│   │   │   └── payments.js
+│   │   ├── services/
+│   │   │   ├── emailService.js
+│   │   │   ├── ticketService.js
+│   │   │   └── paymentService.js
+│   │   ├── middleware/
+│   │   ├── utils/
+│   │   └── server.js
+│   ├── prisma/
+│   │   └── schema.prisma
+│   └── package.json
+└── README.md
+```
 
 ## 🤝 Contributing
 
@@ -590,8 +688,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Inspired by Steam's event system
 - Built with modern web technologies
+- Stripe for payment processing
 - Community feedback and contributions
 
 ---
